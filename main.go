@@ -20,7 +20,7 @@ func main() {
 		Format: "${status} - ${method} ${path}\n",
 	}))
 
-	app.Use(cors.New(cors.Config{
+	app.Use(cors.New(cors.Config{ 
 		AllowHeaders: "*",
 		AllowOrigins: "*",
 		AllowMethods: "GET, POST, PUT, DELETE",

@@ -11,4 +11,5 @@ func SetupTaskRoutes(app *fiber.App) {
 	app.Post("/login", controllers.LoginAdmin)
 	app.Post("/profile", controllers.CreateProfile)
 	app.Get("/profile/me", controllers.GetProfileById)
+	app.Post("/dataAbsen", controllers.InsertDataEmployeeOrStudents)
 }
