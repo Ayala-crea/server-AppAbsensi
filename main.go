@@ -2,6 +2,7 @@ package main
 
 import (
 	"Ayala-Crea/server-app-absensi/config"
+	"Ayala-Crea/server-app-absensi/routes"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,7 +30,7 @@ func main() {
         return c.Next()
     })
 
-    // routes.SetupTaskRoutes(app)
+    routes.SetupTaskRoutes(app)
 
     // Menambahkan rute untuk menguji apakah server berjalan
     app.Get("/", func(c *fiber.Ctx) error {
