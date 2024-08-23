@@ -33,6 +33,10 @@ func UploadExcel(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		// id_penginputan diambil dari JWT
+		idPenginputan := claims.IDPenginputan
+		fmt.Printf("Validated id_penginputan: %d\n", idPenginputan)
+
 		// 3. Parse multipart form untuk mengunggah file
 		err = r.ParseMultipartForm(10 << 20) // 10 MB max
 		if err != nil {
@@ -69,17 +73,8 @@ func UploadExcel(db *sql.DB) http.HandlerFunc {
 				continue
 			}
 
-			// Convert `id_penginputan` dari Excel ke integer
-			idPenginputanExcel := convertToInt(row[1])
-
-			// 8. Validasi id_penginputan dari Excel dengan yang ada di token JWT
-			if idPenginputanExcel != claims.IDPenginputan {
-				http.Error(w, fmt.Sprintf("Invalid id_penginputan at row %d", i+1), http.StatusForbidden)
-				return
-			}
-
 			student := models.StudentsEmployees{
-				AdminID:     convertToInt(row[0]),
+				AdminID:     convertToInt(row[0]), // ID Admin mungkin diambil dari Excel
 				FullName:    row[1],
 				Status:      row[2],
 				Class:       row[3],
@@ -107,6 +102,7 @@ func convertToInt(value string) int {
 	fmt.Sscanf(value, "%d", &result)
 	return result
 }
+
 
 func GetAllStudentsEmployees(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

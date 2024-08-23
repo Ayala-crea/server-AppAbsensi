@@ -3,6 +3,7 @@ package main
 import (
 	"Ayala-Crea/server-app-absensi/api"
 	"Ayala-Crea/server-app-absensi/pkg/config"
+	"Ayala-Crea/server-app-absensi/pkg/cors"
 	"database/sql"
 	"fmt"
 	"log"
@@ -13,6 +14,7 @@ import (
 )
 
 func main() {
+	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("could not load config: %v", err)
@@ -38,8 +40,11 @@ func main() {
 	// Register API routes with the database connection
 	api.AllRoutes(r, db)
 
+	// Apply the CORS middleware to the router
+	corsRouter := cors.CORSMiddleware(r)
+
 	// Start the server
 	addr := fmt.Sprintf(":%d", cfg.App.Port)
 	log.Printf("Server is running on %s\n", addr)
-	log.Fatal(http.ListenAndServe(addr, r))
+	log.Fatal(http.ListenAndServe(addr, corsRouter))
 }
