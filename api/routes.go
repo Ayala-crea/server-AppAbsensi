@@ -15,4 +15,5 @@ func AllRoutes(r *mux.Router, db *sql.DB) {
 
 	r.HandleFunc("/upload", handlers.UploadExcel(db)).Methods("POST")
 	r.HandleFunc("/data", handlers.GetAllStudentsEmployees(db)).Methods("GET")
+	r.HandleFunc("/data/mahasiswa", handlers.GetDataByIdAdmin(db)).Methods("GET")
 }

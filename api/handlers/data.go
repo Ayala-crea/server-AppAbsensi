@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/gorilla/mux"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -169,6 +168,7 @@ func GetAllStudentsEmployees(db *sql.DB) http.HandlerFunc {
 
 func GetDataByIdAdmin(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Ambil token dari header Authorization
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			http.Error(w, "Missing authorization token", http.StatusUnauthorized)
@@ -187,18 +187,41 @@ func GetDataByIdAdmin(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		params := mux.Vars(r)
-        idAdmin := convertToInt(params["id_admin"])
+		// 3. Gunakan admin_id dari klaim JWT
+		idAdmin := claims.ID
+
+		// 4. Query untuk mendapatkan semua data berdasarkan admin_id
 		query := `SELECT id, admin_id, full_name, status, class, npk_or_npm, phone_number FROM students_employees WHERE admin_id = $1`
-		row := db.QueryRow(query, idAdmin)
-		var student models.StudentsEmployees
-		err = row.Scan(&student.ID, &student.AdminID, &student.FullName, &student.Status, &student.Class, &student.NpkOrNpm, &student.PhoneNumber)
-		if err == sql.ErrNoRows {
-			http.Error(w, "Record not found", http.StatusNotFound)
-			return
-		} else if err != nil {
+		rows, err := db.Query(query, idAdmin)
+		if err != nil {
 			http.Error(w, "Failed to execute query", http.StatusInternalServerError)
 			return
 		}
+		defer rows.Close()
+
+		// 5. Buat slice untuk menampung semua data
+		var students []models.StudentsEmployees
+
+		// 6. Iterate melalui hasil query dan tambahkan ke slice
+		for rows.Next() {
+			var student models.StudentsEmployees
+			err := rows.Scan(&student.ID, &student.AdminID, &student.FullName, &student.Status, &student.Class, &student.NpkOrNpm, &student.PhoneNumber)
+			if err != nil {
+				http.Error(w, "Failed to scan record", http.StatusInternalServerError)
+				return
+			}
+			students = append(students, student)
+		}
+
+		// 7. Periksa jika terjadi kesalahan saat iterasi
+		if err = rows.Err(); err != nil {
+			http.Error(w, "Error iterating over rows", http.StatusInternalServerError)
+			return
+		}
+
+		// 8. Kembalikan hasil sebagai JSON
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(students)
 	}
 }
+
