@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/gorilla/mux"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -163,5 +164,41 @@ func GetAllStudentsEmployees(db *sql.DB) http.HandlerFunc {
 		// Kembalikan hasil dalam bentuk JSON
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(studentsEmployees)
+	}
+}
+
+func GetDataByIdAdmin(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing authorization token", http.StatusUnauthorized)
+			return
+		}
+
+		// 2. Validasi token JWT
+		tokenString := strings.Split(authHeader, "Bearer ")[1]
+		claims := &models.Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+		if err != nil || !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		params := mux.Vars(r)
+        idAdmin := convertToInt(params["id_admin"])
+		query := `SELECT id, admin_id, full_name, status, class, npk_or_npm, phone_number FROM students_employees WHERE admin_id = $1`
+		row := db.QueryRow(query, idAdmin)
+		var student models.StudentsEmployees
+		err = row.Scan(&student.ID, &student.AdminID, &student.FullName, &student.Status, &student.Class, &student.NpkOrNpm, &student.PhoneNumber)
+		if err == sql.ErrNoRows {
+			http.Error(w, "Record not found", http.StatusNotFound)
+			return
+		} else if err != nil {
+			http.Error(w, "Failed to execute query", http.StatusInternalServerError)
+			return
+		}
 	}
 }
