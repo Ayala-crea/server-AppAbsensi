@@ -37,6 +37,10 @@ func UploadExcel(db *sql.DB) http.HandlerFunc {
 		idPenginputan := claims.IDPenginputan
 		fmt.Printf("Validated id_penginputan: %d\n", idPenginputan)
 
+		// AdminID diambil dari JWT
+		adminID := claims.ID // Asumsikan ID di JWT adalah AdminID
+		fmt.Printf("Validated AdminID: %d\n", adminID)
+
 		// 3. Parse multipart form untuk mengunggah file
 		err = r.ParseMultipartForm(10 << 20) // 10 MB max
 		if err != nil {
@@ -73,8 +77,9 @@ func UploadExcel(db *sql.DB) http.HandlerFunc {
 				continue
 			}
 
+			// Gunakan AdminID dari JWT
 			student := models.StudentsEmployees{
-				AdminID:     convertToInt(row[0]), // ID Admin mungkin diambil dari Excel
+				AdminID:     adminID, // Mengambil AdminID dari JWT token
 				FullName:    row[1],
 				Status:      row[2],
 				Class:       row[3],
@@ -102,7 +107,6 @@ func convertToInt(value string) int {
 	fmt.Sscanf(value, "%d", &result)
 	return result
 }
-
 
 func GetAllStudentsEmployees(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
