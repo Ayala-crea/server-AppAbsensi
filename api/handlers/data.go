@@ -225,3 +225,55 @@ func GetDataByIdAdmin(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func CreateDataManual(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Ambil token dari header Authorization
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing authorization token", http.StatusUnauthorized)
+			return
+		}
+
+		// 2. Validasi token JWT dan ambil ID dari klaim
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		claims := &models.Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+		if err != nil || !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		// Ambil AdminID dari klaim JWT
+		adminID := claims.ID
+
+		// 3. Decode JSON dari body request
+		var data models.StudentsEmployees
+		err = json.NewDecoder(r.Body).Decode(&data)
+		if err != nil {
+			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			return
+		}
+
+
+		// Set nilai tambahan yang tidak diambil dari JSON
+		data.AdminID = adminID
+		// data.CreatedAt = time.Now()  // Set waktu sekarang
+		// data.IsActive = true          // Default aktif
+
+		// 5. Insert data ke dalam database
+		query := `INSERT INTO students_employees (admin_id, full_name, status, class, npk_or_npm, phone_number)
+		          VALUES ($1, $2, $3, $4, $5, $6)`
+		_, err = db.Exec(query, data.AdminID, data.FullName, data.Status, data.Class, data.NpkOrNpm, data.PhoneNumber)
+		if err != nil {
+			http.Error(w, "Failed to insert record: " + err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// 6. Set header response dan kirim response JSON
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+	}
+}
