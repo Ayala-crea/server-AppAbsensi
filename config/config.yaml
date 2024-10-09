@@ -6,8 +6,8 @@ app:
 
 database:
   host: "localhost"
-  port: 5500
+  port: 5432
   username: "postgres"
   password: "pwge24"
-  name: "app-absensi"
+  name: "sikad_Absensi"
   sslmode: "disable"
